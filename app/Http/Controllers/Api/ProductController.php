@@ -12,15 +12,31 @@ class ProductController extends Controller
     {
         $query = Product::with(['category', 'brand']);
 
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhereHas('category', function ($q) use ($search) {
+                      $q->where('name', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('brand', function ($q) use ($search) {
+                      $q->where('name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
         if ($request->has('category')) {
-            $query->whereHas('category', function ($q) use ($request) {
-                $q->where('slug', $request->category);
+            $categories = explode(',', $request->category);
+            $query->whereHas('category', function ($q) use ($categories) {
+                $q->whereIn('slug', $categories);
             });
         }
 
         if ($request->has('brand')) {
-            $query->whereHas('brand', function ($q) use ($request) {
-                $q->where('slug', $request->brand);
+            $brands = explode(',', $request->brand);
+            $query->whereHas('brand', function ($q) use ($brands) {
+                $q->whereIn('slug', $brands);
             });
         }
 

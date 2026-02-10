@@ -59,9 +59,16 @@
 
       <!-- Product Grid -->
       <div class="flex-1">
-        <div class="flex justify-between items-center mb-6">
-          <h2 class="text-2xl font-bold text-gray-900">Latest Arrivals</h2>
-          <span class="text-gray-500 text-sm">{{ filteredProducts.length }} products found</span>
+        <div class="flex flex-col mb-6">
+          <div class="flex justify-between items-center">
+            <h2 class="text-2xl font-bold text-gray-900">
+              {{ $route.query.search ? 'Search Results' : 'Latest Arrivals' }}
+            </h2>
+            <span class="text-gray-500 text-sm">{{ filteredProducts.length }} products found</span>
+          </div>
+          <p v-if="$route.query.search" class="text-gray-500 mt-1">
+            Showing results for "<span class="text-blue-600 font-medium">{{ $route.query.search }}</span>"
+          </p>
         </div>
 
         <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -112,26 +119,55 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import { useCartStore } from '../stores/cart';
 import { useToastStore } from '../stores/toast';
 import { FunnelIcon, PlusIcon } from '@heroicons/vue/24/outline';
 
+const route = useRoute();
+const router = useRouter();
 const products = ref([]);
 const categories = ref([]);
 const loading = ref(true);
 const cartStore = useCartStore();
 const toastStore = useToastStore();
 
-const selectedCategories = ref([]);
-const selectedBrands = ref([]);
+const selectedCategories = ref(route.query.category ? route.query.category.split(',') : []);
+const selectedBrands = ref(route.query.brand ? route.query.brand.split(',') : []);
 const brands = ['Canon', 'Nikon', 'Sony']; // Mock brands for filter
 
-onMounted(async () => {
+// Sync filters with URL
+watch(() => [selectedCategories.value, selectedBrands.value], () => {
+  const query = { ...route.query };
+  
+  if (selectedCategories.value.length > 0) {
+    query.category = selectedCategories.value.join(',');
+  } else {
+    delete query.category;
+  }
+  
+  if (selectedBrands.value.length > 0) {
+    query.brand = selectedBrands.value.join(',');
+  } else {
+    delete query.brand;
+  }
+  
+  // Use replace instead of push to avoid cluttering history
+  router.replace({ query });
+}, { deep: true });
+
+async function fetchProducts() {
+  loading.value = true;
   try {
+    const params = {};
+    if (route.query.search) params.search = route.query.search;
+    if (route.query.category) params.category = route.query.category;
+    if (route.query.brand) params.brand = route.query.brand;
+    
     const [prodRes, catRes] = await Promise.all([
-      axios.get('/api/products'),
+      axios.get('/api/products', { params }),
       axios.get('/api/categories')
     ]);
     products.value = prodRes.data;
@@ -142,16 +178,20 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
+}
+
+onMounted(() => {
+  fetchProducts();
+});
+
+// Re-fetch products when search or filters change in URL
+watch(() => [route.query.search, route.query.category, route.query.brand], () => {
+  fetchProducts();
 });
 
 const filteredProducts = computed(() => {
-  return products.value.filter(product => {
-    const matchCat = selectedCategories.value.length === 0 || 
-      (product.category && selectedCategories.value.includes(product.category.slug));
-    const matchBrand = selectedBrands.value.length === 0 || 
-      (product.brand && selectedBrands.value.includes(product.brand.slug));
-    return matchCat && matchBrand;
-  });
+  // Since we now filter on backend, we just return products.value
+  return products.value;
 });
 
 function addToCart(product) {
@@ -162,5 +202,6 @@ function addToCart(product) {
 function clearFilters() {
   selectedCategories.value = [];
   selectedBrands.value = [];
+  router.push({ path: '/', query: {} });
 }
 </script>
