@@ -82,20 +82,28 @@
             </div>
           </header>
 
-          <!-- Core Feature Pills -->
-          <div class="grid grid-cols-2 gap-3">
-            <div class="bg-gray-50/50 border border-gray-100 p-4 rounded-3xl flex items-center gap-4 transition hover:bg-white hover:shadow-xl hover:shadow-gray-200/50">
-              <div class="bg-blue-100 p-2.5 rounded-2xl"><CameraIcon class="w-6 h-6 text-blue-600" /></div>
-              <div>
-                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Quality</p>
-                <p class="text-sm font-black text-gray-900">4K Ultra HD</p>
+          <!-- Dynamic Feature Pills -->
+          <div v-if="featureSpecs.length > 0" class="grid grid-cols-2 gap-3">
+            <div 
+              v-for="spec in featureSpecs" 
+              :key="spec.key"
+              class="bg-gray-50/50 border border-gray-100 p-4 rounded-3xl flex items-center gap-4 transition hover:bg-white hover:shadow-xl hover:shadow-gray-200/50 group"
+            >
+              <div 
+                class="p-2.5 rounded-2xl transition-transform group-hover:scale-110"
+                :class="{
+                  'bg-blue-100 text-blue-600': spec.color === 'blue',
+                  'bg-indigo-100 text-indigo-600': spec.color === 'indigo',
+                  'bg-amber-100 text-amber-600': spec.color === 'amber',
+                  'bg-rose-100 text-rose-600': spec.color === 'rose',
+                  'bg-emerald-100 text-emerald-600': spec.color === 'emerald'
+                }"
+              >
+                <component :is="spec.icon" class="w-6 h-6" />
               </div>
-            </div>
-            <div class="bg-gray-50/50 border border-gray-100 p-4 rounded-3xl flex items-center gap-4 transition hover:bg-white hover:shadow-xl hover:shadow-gray-200/50">
-              <div class="bg-indigo-100 p-2.5 rounded-2xl"><CpuChipIcon class="w-6 h-6 text-indigo-600" /></div>
               <div>
-                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Engine</p>
-                <p class="text-sm font-black text-gray-900">Next-Gen Pro</p>
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{{ spec.label }}</p>
+                <p class="text-sm font-black text-gray-900">{{ spec.value }}</p>
               </div>
             </div>
           </div>
@@ -196,7 +204,7 @@
             <div class="divide-y divide-gray-50">
               <div v-for="(value, label) in product.specifications" :key="label" class="grid grid-cols-3 p-8 hover:bg-gray-50/50 transition">
                 <div class="text-xs font-black text-gray-400 uppercase tracking-widest">{{ label.replace('_', ' ') }}</div>
-                <div class="col-span-2 text-lg font-bold text-gray-900">{{ value }}</div>
+                <div class="col-span-2 text-lg font-bold text-gray-900">{{ value || '-' }}</div>
               </div>
               <div v-if="!product.specifications || Object.keys(product.specifications).length === 0" class="p-20 text-center">
                 <p class="text-gray-400 font-bold">Full technical sheet coming soon.</p>
@@ -278,7 +286,10 @@ import {
   SparklesIcon,
   ArrowPathIcon,
   UserGroupIcon,
-  StarIcon
+  StarIcon,
+  Battery50Icon,
+  SignalIcon,
+  Square3Stack3DIcon
 } from '@heroicons/vue/24/solid';
 
 const route = useRoute();
@@ -288,6 +299,25 @@ const toastStore = useToastStore();
 const quantity = ref(1);
 const activeImageIndex = ref(0);
 const activeTab = ref('overview');
+
+const featureSpecs = computed(() => {
+  if (!product.value || !product.value.specifications) return [];
+  
+  const defaults = [
+    { key: 'quality', label: 'Quality', icon: CameraIcon, color: 'blue' },
+    { key: 'engine', label: 'Engine', icon: CpuChipIcon, color: 'indigo' },
+    { key: 'sensor', label: 'Sensor', icon: SparklesIcon, color: 'amber' },
+    { key: 'iso', label: 'ISO Range', icon: SignalIcon, color: 'rose' },
+    { key: 'battery', label: 'Battery', icon: Battery50Icon, color: 'emerald' }
+  ];
+
+  return defaults
+    .map(spec => ({
+      ...spec,
+      value: product.value.specifications[spec.key] || product.value.specifications[spec.label.toLowerCase()]
+    }))
+    .filter(spec => spec.value && spec.value !== 'null');
+});
 
 const allImages = computed(() => {
   if (!product.value) return [];
