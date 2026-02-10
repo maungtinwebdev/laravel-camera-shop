@@ -22,6 +22,13 @@ class DatabaseSeeder extends Seeder
             'email' => 'test@example.com',
         ]);
 
+        User::factory()->create([
+            'name' => 'Admin User',
+            'email' => 'admin@example.com',
+            'password' => bcrypt('password'),
+            'is_admin' => true,
+        ]);
+
         $canon = \App\Models\Brand::create(['name' => 'Canon', 'slug' => 'canon']);
         $nikon = \App\Models\Brand::create(['name' => 'Nikon', 'slug' => 'nikon']);
         $sony = \App\Models\Brand::create(['name' => 'Sony', 'slug' => 'sony']);
