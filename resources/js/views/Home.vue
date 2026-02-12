@@ -92,6 +92,9 @@
           <div v-for="product in filteredProducts" :key="product.id" class="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col">
             <div class="relative h-48 overflow-hidden bg-gray-100">
               <img :src="product.image" :alt="product.name" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+              <div v-if="product.sale_price && product.original_price && product.sale_price < product.original_price" class="absolute top-3 left-3 bg-red-600 text-white text-[10px] font-black px-2 py-1 rounded-full uppercase shadow-lg z-10">
+                Sale {{ Math.round((1 - product.sale_price / product.original_price) * 100) }}% Off
+              </div>
               <div class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button @click.prevent="addToCart(product)" class="bg-white text-blue-600 p-2 rounded-full shadow-lg hover:bg-blue-600 hover:text-white transition">
                   <PlusIcon class="w-5 h-5" />
@@ -106,9 +109,16 @@
               </router-link>
               <p class="text-gray-500 text-sm mb-4 line-clamp-2">{{ product.description }}</p>
               
-              <div class="mt-auto flex justify-between items-center pt-4 border-t border-gray-50">
-                <span class="text-xl font-bold text-gray-900">${{ parseFloat(product.price).toLocaleString() }}</span>
-                <span class="text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded-full">In Stock</span>
+              <div class="mt-auto flex justify-between items-end pt-4 border-t border-gray-50">
+                <div class="flex flex-col">
+                  <span v-if="product.original_price && product.sale_price && product.sale_price < product.original_price" class="text-xs text-gray-400 line-through mb-0.5">
+                    ${{ parseFloat(product.original_price).toLocaleString() }}
+                  </span>
+                  <span class="text-xl font-bold text-gray-900">
+                    ${{ parseFloat(product.sale_price || product.price).toLocaleString() }}
+                  </span>
+                </div>
+                <span class="text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded-full mb-1">In Stock</span>
               </div>
             </div>
           </div>

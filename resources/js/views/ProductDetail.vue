@@ -74,10 +74,10 @@
             
             <div class="flex items-baseline gap-4">
               <span class="text-5xl font-black text-gray-900 tracking-tighter">
-                ${{ parseFloat(product.price).toLocaleString() }}
+                ${{ parseFloat(product.sale_price || product.price).toLocaleString() }}
               </span>
-              <span class="text-gray-400 font-bold line-through text-xl">
-                ${{ (parseFloat(product.price) * 1.2).toLocaleString() }}
+              <span v-if="product.original_price && product.original_price > (product.sale_price || product.price)" class="text-gray-400 font-bold line-through text-xl">
+                ${{ parseFloat(product.original_price).toLocaleString() }}
               </span>
             </div>
           </header>
@@ -131,7 +131,7 @@
               >
                 <div class="relative z-10 flex items-center justify-center gap-3">
                   <ShoppingBagIcon class="w-6 h-6 group-hover:animate-bounce" />
-                  Add to Cart — ${{ (parseFloat(product.price) * quantity).toLocaleString() }}
+                  Add to Cart — ${{ (parseFloat(product.sale_price || product.price) * quantity).toLocaleString() }}
                 </div>
               </button>
               
@@ -242,7 +242,7 @@
       <div class="flex items-center gap-4">
         <div class="flex-1">
           <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Price</p>
-          <p class="text-xl font-black text-gray-900">${{ (parseFloat(product.price) * quantity).toLocaleString() }}</p>
+          <p class="text-xl font-black text-gray-900">${{ (parseFloat(product.sale_price || product.price) * quantity).toLocaleString() }}</p>
         </div>
         <button @click="addToCart" class="bg-gray-900 text-white px-8 py-4 rounded-2xl font-black shadow-xl shadow-gray-900/20 active:scale-95 transition-transform">
           Add to Cart

@@ -12,6 +12,9 @@ class Product extends Model
         'category_id', 
         'brand_id', 
         'price', 
+        'original_price',
+        'sale_price',
+        'cost_price',
         'description', 
         'image', 
         'gallery',
@@ -22,7 +25,10 @@ class Product extends Model
     protected $casts = [
         'gallery' => 'array',
         'specifications' => 'array',
-        'price' => 'decimal:2'
+        'price' => 'decimal:2',
+        'original_price' => 'decimal:2',
+        'sale_price' => 'decimal:2',
+        'cost_price' => 'decimal:2'
     ];
 
     public function category()

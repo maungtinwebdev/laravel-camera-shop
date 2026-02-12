@@ -19,7 +19,7 @@
             <th class="px-6 py-4">Name</th>
             <th class="px-6 py-4">Category</th>
             <th class="px-6 py-4">Brand</th>
-            <th class="px-6 py-4">Price</th>
+            <th class="px-6 py-4">Price / Sale</th>
             <th class="px-6 py-4">Stock</th>
             <th class="px-6 py-4 text-right">Actions</th>
           </tr>
@@ -32,7 +32,13 @@
             <td class="px-6 py-4 font-medium">{{ product.name }}</td>
             <td class="px-6 py-4 text-gray-500">{{ product.category?.name }}</td>
             <td class="px-6 py-4 text-gray-500">{{ product.brand?.name }}</td>
-            <td class="px-6 py-4 font-bold">${{ parseFloat(product.price).toLocaleString() }}</td>
+            <td class="px-6 py-4">
+              <div class="flex flex-col">
+                <span class="font-bold text-gray-900">${{ parseFloat(product.price).toLocaleString() }}</span>
+                <span v-if="product.sale_price" class="text-xs text-green-600">Sale: ${{ parseFloat(product.sale_price).toLocaleString() }}</span>
+                <span v-if="product.original_price" class="text-xs text-gray-400 line-through">Orig: ${{ parseFloat(product.original_price).toLocaleString() }}</span>
+              </div>
+            </td>
             <td class="px-6 py-4">
               <span :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'">{{ product.stock }}</span>
             </td>
@@ -56,14 +62,33 @@
         </div>
         
         <form @submit.prevent="saveProduct" class="p-6 space-y-4">
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-3 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
               <input v-model="form.name" required class="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500">
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Price</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Base Price</label>
               <input v-model="form.price" type="number" step="0.01" required class="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Stock</label>
+              <input v-model="form.stock" type="number" required class="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Original Price (MSRP)</label>
+              <input v-model="form.original_price" type="number" step="0.01" class="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" placeholder="Optional">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Sale Price</label>
+              <input v-model="form.sale_price" type="number" step="0.01" class="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" placeholder="Optional">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Cost Price (Purchase)</label>
+              <input v-model="form.cost_price" type="number" step="0.01" class="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" placeholder="Internal Only">
             </div>
           </div>
 
@@ -80,11 +105,6 @@
                 <option v-for="brand in brands" :key="brand.id" :value="brand.id">{{ brand.name }}</option>
               </select>
             </div>
-          </div>
-
-          <div>
-             <label class="block text-sm font-medium text-gray-700 mb-1">Stock</label>
-             <input v-model="form.stock" type="number" required class="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500">
           </div>
 
           <div>

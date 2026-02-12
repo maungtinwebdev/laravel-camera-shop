@@ -33,18 +33,52 @@ class DashboardController extends Controller
             ];
         });
 
+        // Profit & Cost Calculations
+        $totalRevenue = Order::sum('total_price');
+        $totalCost = DB::table('order_items')
+            ->join('products', 'order_items.product_id', '=', 'products.id')
+            ->sum(DB::raw('order_items.quantity * products.cost_price'));
+        
+        $totalProfit = $totalRevenue - $totalCost;
+        
+        $profitTrend = DB::table('order_items')
+            ->join('products', 'order_items.product_id', '=', 'products.id')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->select(
+                DB::raw('DATE(orders.created_at) as date'),
+                DB::raw('SUM(order_items.quantity * order_items.price) as revenue'),
+                DB::raw('SUM(order_items.quantity * products.cost_price) as cost')
+            )
+            ->where('orders.created_at', '>=', Carbon::today()->subDays(6))
+            ->groupBy('date')
+            ->get()
+            ->keyBy('date');
+
+        $trendData = $last7Days->map(function ($date) use ($profitTrend) {
+            $dayData = $profitTrend->get($date);
+            $revenue = $dayData ? (float)$dayData->revenue : 0;
+            $cost = $dayData ? (float)$dayData->cost : 0;
+            return [
+                'date' => Carbon::parse($date)->format('M d'),
+                'revenue' => $revenue,
+                'cost' => $cost,
+                'profit' => $revenue - $cost
+            ];
+        });
+
         $topCategories = Category::withCount('products')
             ->orderBy('products_count', 'desc')
             ->take(5)
             ->get();
 
-        $totalRevenue = Order::sum('total_price');
         $totalOrders = Order::count();
         $avgOrderValue = $totalOrders > 0 ? $totalRevenue / $totalOrders : 0;
 
         return response()->json([
             'total_orders' => $totalOrders,
             'total_revenue' => $totalRevenue,
+            'total_cost' => $totalCost,
+            'total_profit' => $totalProfit,
             'avg_order_value' => round($avgOrderValue, 2),
             'total_products' => Product::count(),
             'total_users' => User::count(),

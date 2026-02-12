@@ -192,6 +192,8 @@ ChartJS.register(
 
 const stats = ref({
   total_revenue: 0,
+  total_cost: 0,
+  total_profit: 0,
   total_orders: 0,
   avg_order_value: 0,
   total_products: 0,
@@ -236,32 +238,29 @@ const statCards = computed(() => {
       label: 'Total Revenue',
       value: `$${parseFloat(s.total_revenue || 0).toLocaleString()}`,
       icon: BanknotesIcon,
+      bgClass: 'bg-blue-50',
+      iconClass: 'text-blue-600',
+    },
+    {
+      label: 'Total Cost',
+      value: `$${parseFloat(s.total_cost || 0).toLocaleString()}`,
+      icon: CircleStackIcon,
+      bgClass: 'bg-orange-50',
+      iconClass: 'text-orange-600',
+    },
+    {
+      label: 'Total Profit',
+      value: `$${parseFloat(s.total_profit || 0).toLocaleString()}`,
+      icon: PresentationChartLineIcon,
       bgClass: 'bg-green-50',
       iconClass: 'text-green-600',
-      trend: 12.5
     },
     {
       label: 'Total Orders',
       value: s.total_orders || 0,
       icon: ShoppingBagIcon,
-      bgClass: 'bg-blue-50',
-      iconClass: 'text-blue-600',
-      trend: 8.2
-    },
-    {
-      label: 'Avg. Order Value',
-      value: `$${parseFloat(s.avg_order_value || 0).toLocaleString()}`,
-      icon: PresentationChartLineIcon,
       bgClass: 'bg-purple-50',
       iconClass: 'text-purple-600',
-      trend: -2.4
-    },
-    {
-      label: 'Inventory Items',
-      value: s.total_products || 0,
-      icon: CircleStackIcon,
-      bgClass: 'bg-orange-50',
-      iconClass: 'text-orange-600'
     }
   ];
 });
@@ -272,18 +271,38 @@ const chartData = computed(() => {
   
   return {
     labels: trendArray.map(d => d?.date || ''),
-    datasets: [{
-      label: 'Revenue',
-      data: trendArray.map(d => d?.total || 0),
-      borderColor: '#3b82f6',
-      backgroundColor: 'rgba(59, 130, 246, 0.1)',
-      fill: true,
-      tension: 0.4,
-      borderWidth: 4,
-      pointRadius: 6,
-      pointBackgroundColor: '#fff',
-      pointBorderWidth: 3
-    }]
+    datasets: [
+      {
+        label: 'Revenue',
+        data: trendArray.map(d => d?.revenue || 0),
+        borderColor: '#3b82f6',
+        backgroundColor: 'transparent',
+        tension: 0.4,
+        borderWidth: 3,
+        pointRadius: 4,
+      },
+      {
+        label: 'Cost',
+        data: trendArray.map(d => d?.cost || 0),
+        borderColor: '#f97316',
+        backgroundColor: 'transparent',
+        tension: 0.4,
+        borderWidth: 3,
+        pointRadius: 4,
+      },
+      {
+        label: 'Profit',
+        data: trendArray.map(d => d?.profit || 0),
+        borderColor: '#10b981',
+        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        fill: true,
+        tension: 0.4,
+        borderWidth: 4,
+        pointRadius: 6,
+        pointBackgroundColor: '#fff',
+        pointBorderWidth: 3
+      }
+    ]
   };
 });
 
