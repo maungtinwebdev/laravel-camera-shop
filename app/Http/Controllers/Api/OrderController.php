@@ -20,8 +20,7 @@ class OrderController extends Controller
             'shipping_address' => 'required|string',
         ]);
 
-        // Mock user for now or use authenticated user
-        $userId = 1; // Assuming seeded user id 1
+        $userId = $request->user() ? $request->user()->id : 1; // Use auth user or default to 1
 
         try {
             DB::beginTransaction();
@@ -45,10 +44,20 @@ class OrderController extends Controller
 
             DB::commit();
 
-            return response()->json($order, 201);
+            return response()->json($order->load('items.product'), 201);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['error' => 'Order creation failed: ' . $e->getMessage()], 500);
         }
+    }
+
+    public function index(Request $request)
+    {
+        $orders = Order::where('user_id', $request->user()->id)
+            ->with(['items.product'])
+            ->latest()
+            ->get();
+
+        return response()->json($orders);
     }
 }

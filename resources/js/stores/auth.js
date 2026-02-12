@@ -28,20 +28,40 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
+    function clearAuth() {
+        token.value = null;
+        user.value = null;
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        delete axios.defaults.headers.common['Authorization'];
+    }
+
     async function logout() {
         try {
             await axios.post('/api/logout');
         } catch (e) {
             // Ignore error
         } finally {
-            token.value = null;
-            user.value = null;
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            delete axios.defaults.headers.common['Authorization'];
-            router.push('/admin/login');
+            clearAuth();
+            router.push('/login');
         }
     }
 
-    return { user, token, login, logout };
+    async function fetchUser() {
+        if (!token.value) return;
+        
+        try {
+            const response = await axios.get('/api/user');
+            user.value = response.data;
+            localStorage.setItem('user', JSON.stringify(user.value));
+        } catch (error) {
+            console.error('Fetch user failed', error);
+            if (error.response?.status === 401) {
+                clearAuth();
+            }
+            throw error;
+        }
+    }
+
+    return { user, token, login, logout, fetchUser, clearAuth };
 });

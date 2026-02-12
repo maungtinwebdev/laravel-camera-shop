@@ -18,18 +18,32 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials)) {
             $user = Auth::user();
-            if ($user->is_admin) {
-                $token = $user->createToken('admin-token', ['admin'])->plainTextToken;
-                return response()->json([
-                    'token' => $token,
-                    'user' => $user
-                ]);
-            }
-            // For now, only admin login is supported via this endpoint for the admin panel
-            return response()->json(['message' => 'Unauthorized. Admin access required.'], 403);
+            $token = $user->createToken('auth-token')->plainTextToken;
+            
+            return response()->json([
+                'token' => $token,
+                'user' => $user
+            ]);
         }
 
         return response()->json(['message' => 'Invalid credentials'], 401);
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+        
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+        ]);
+
+        $user->update($validated);
+
+        return response()->json([
+            'message' => 'Profile updated successfully',
+            'user' => $user
+        ]);
     }
 
     public function logout(Request $request)

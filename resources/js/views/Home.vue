@@ -11,9 +11,25 @@
         <p class="text-gray-300 text-lg md:text-xl mb-8 max-w-xl">
           Discover professional-grade cameras and lenses for every photographer.
         </p>
-        <button class="bg-blue-600 text-white px-8 py-3.5 rounded-full font-bold hover:bg-blue-700 transition shadow-lg hover:shadow-blue-600/30 transform hover:-translate-y-1">
-          Shop Now
-        </button>
+        <div class="flex flex-wrap gap-4">
+          <button @click="scrollToProducts" class="bg-blue-600 text-white px-8 py-3.5 rounded-full font-bold hover:bg-blue-700 transition shadow-lg hover:shadow-blue-600/30 transform hover:-translate-y-1">
+            Shop Now
+          </button>
+          <router-link 
+            v-if="!authStore.user" 
+            to="/login" 
+            class="bg-white/10 backdrop-blur-md text-white border border-white/20 px-8 py-3.5 rounded-full font-bold hover:bg-white/20 transition shadow-lg transform hover:-translate-y-1"
+          >
+            Sign In
+          </router-link>
+          <router-link 
+            v-else 
+            to="/profile" 
+            class="bg-white/10 backdrop-blur-md text-white border border-white/20 px-8 py-3.5 rounded-full font-bold hover:bg-white/20 transition shadow-lg transform hover:-translate-y-1"
+          >
+            View Profile
+          </router-link>
+        </div>
       </div>
     </div>
 
@@ -58,7 +74,7 @@
       </aside>
 
       <!-- Product Grid -->
-      <div class="flex-1">
+      <div id="products-grid" class="flex-1">
         <div class="flex flex-col mb-6">
           <div class="flex justify-between items-center">
             <h2 class="text-2xl font-bold text-gray-900">
@@ -132,12 +148,14 @@
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
+import { useAuthStore } from '../stores/auth';
 import { useCartStore } from '../stores/cart';
 import { useToastStore } from '../stores/toast';
 import { FunnelIcon, PlusIcon } from '@heroicons/vue/24/outline';
 
 const route = useRoute();
 const router = useRouter();
+const authStore = useAuthStore();
 const products = ref([]);
 const categories = ref([]);
 const loading = ref(true);
@@ -146,7 +164,12 @@ const toastStore = useToastStore();
 
 const selectedCategories = ref(route.query.category ? route.query.category.split(',') : []);
 const selectedBrands = ref(route.query.brand ? route.query.brand.split(',') : []);
-const brands = ['Canon', 'Nikon', 'Sony']; // Mock brands for filter
+const brands = ['Canon', 'Nikon', 'Sony', 'Fujifilm', 'Panasonic']; // Mock brands for filter
+
+function scrollToProducts() {
+  const el = document.getElementById('products-grid');
+  if (el) el.scrollIntoView({ behavior: 'smooth' });
+}
 
 // Sync filters with URL
 watch(() => [selectedCategories.value, selectedBrands.value], () => {

@@ -6,7 +6,21 @@
         <p class="text-gray-500 text-sm">Sign in to manage the shop</p>
       </div>
 
-      <form @submit.prevent="handleLogin" class="space-y-6">
+      <div class="space-y-6">
+        <button 
+          @click="loginWithGoogle"
+          class="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 font-semibold py-3 px-4 rounded-lg hover:bg-gray-50 transition shadow-sm"
+        >
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5" alt="Google">
+          Sign in with Google
+        </button>
+
+        <div class="relative flex items-center justify-center">
+          <div class="border-t border-gray-300 w-full"></div>
+          <span class="bg-white px-3 text-sm text-gray-500 absolute">or</span>
+        </div>
+
+        <form @submit.prevent="handleLogin" class="space-y-6">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
           <input 
@@ -44,6 +58,7 @@
       </form>
     </div>
   </div>
+</div>
 </template>
 
 <script setup>
@@ -57,6 +72,10 @@ const loading = ref(false);
 const error = ref('');
 const authStore = useAuthStore();
 const router = useRouter();
+
+function loginWithGoogle() {
+  window.location.href = 'http://localhost:8000/api/auth/google';
+}
 
 async function handleLogin() {
   loading.value = true;

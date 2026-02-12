@@ -73,11 +73,62 @@
 
         <!-- Navigation Actions -->
         <div class="flex items-center gap-2 md:gap-5">
-          <!-- User Menu (Guest) -->
-          <router-link to="/admin/login" class="hidden sm:flex items-center gap-2 text-gray-600 hover:text-blue-600 font-bold transition text-sm px-3 py-2 rounded-xl hover:bg-blue-50">
+          <!-- Profile/Sign In Toggle -->
+          <router-link 
+            :to="authStore.user ? '/profile' : '/login'" 
+            class="hidden sm:flex items-center gap-2 text-gray-700 hover:text-blue-600 font-bold transition text-sm px-4 py-2 rounded-2xl border border-gray-200 hover:border-blue-100 hover:bg-blue-50"
+          >
             <UserIcon class="w-5 h-5" />
-            <span>Sign In</span>
+            <span>{{ authStore.user ? 'Profile' : 'Sign In' }}</span>
           </router-link>
+
+          <!-- User Dropdown (Avatar Only when logged in) -->
+          <div v-if="authStore.user" class="relative">
+            <button 
+              @click="isUserMenuOpen = !isUserMenuOpen"
+              v-click-away="() => isUserMenuOpen = false"
+              class="flex items-center p-1 rounded-full hover:bg-gray-100 transition border border-transparent"
+            >
+              <img 
+                :src="authStore.user.avatar || 'https://ui-avatars.com/api/?name=' + authStore.user.name" 
+                class="w-8 h-8 rounded-full object-cover shadow-sm"
+              >
+            </button>
+
+            <!-- User Dropdown -->
+            <transition
+              enter-active-class="transition duration-200 ease-out"
+              enter-from-class="transform scale-95 opacity-0"
+              enter-to-class="transform scale-100 opacity-100"
+              leave-active-class="transition duration-150 ease-in"
+              leave-from-class="transform scale-100 opacity-100"
+              leave-to-class="transform scale-95 opacity-0"
+            >
+              <div v-if="isUserMenuOpen" class="absolute top-full right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 overflow-hidden">
+                <div class="px-4 py-3 border-b border-gray-50 mb-1">
+                  <p class="text-xs font-bold text-gray-900 truncate">{{ authStore.user.name }}</p>
+                  <p class="text-[10px] text-gray-500 truncate">{{ authStore.user.email }}</p>
+                </div>
+                
+                <router-link to="/profile" @click="isUserMenuOpen = false" class="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
+                  <UserIcon class="w-4 h-4" />
+                  My Profile
+                </router-link>
+
+                <router-link v-if="authStore.user.is_admin" to="/admin/dashboard" @click="isUserMenuOpen = false" class="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
+                  <AdjustmentsHorizontalIcon class="w-4 h-4" />
+                  Admin Panel
+                </router-link>
+
+                <div class="h-px bg-gray-50 my-1"></div>
+
+                <button @click="handleLogout" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 transition">
+                  <ArrowLeftOnRectangleIcon class="w-4 h-4" />
+                  Logout
+                </button>
+              </div>
+            </transition>
+          </div>
 
           <!-- Cart -->
           <router-link to="/cart" class="relative group p-2 rounded-xl hover:bg-gray-100 transition">
@@ -122,8 +173,11 @@
           <router-link to="/" class="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-gray-50 text-gray-700 font-bold text-sm">
             Shop
           </router-link>
-          <router-link to="/admin/login" class="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-blue-50 text-blue-600 font-bold text-sm">
+          <router-link v-if="!authStore.user" to="/login" class="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-blue-50 text-blue-600 font-bold text-sm">
             Sign In
+          </router-link>
+          <router-link v-else to="/profile" class="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-blue-50 text-blue-600 font-bold text-sm">
+            Profile
           </router-link>
         </div>
       </div>
@@ -136,25 +190,30 @@ import { ref, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
 import { useCartStore } from '../stores/cart';
+import { useAuthStore } from '../stores/auth';
 import { 
   ShoppingBagIcon, 
   CameraIcon, 
   MagnifyingGlassIcon, 
   UserIcon,
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
+  ChevronDownIcon,
+  AdjustmentsHorizontalIcon,
+  ArrowLeftOnRectangleIcon
 } from '@heroicons/vue/24/outline';
 
 const router = useRouter();
 const route = useRoute();
 const cartStore = useCartStore();
-const isMobileMenuOpen = ref(false);
-const searchQuery = ref(route.query.search || '');
+const authStore = useAuthStore();
 
-// Live search states
-const searchResults = ref([]);
-const isSearching = ref(false);
+const searchQuery = ref(route.query.search || '');
+const isMobileMenuOpen = ref(false);
 const isSearchFocused = ref(false);
+const isSearching = ref(false);
+const searchResults = ref([]);
+const isUserMenuOpen = ref(false);
 let debounceTimeout = null;
 
 // v-click-away directive
@@ -171,6 +230,13 @@ const vClickAway = {
     document.removeEventListener('click', el.clickAwayEvent);
   },
 };
+
+function handleLogout() {
+  authStore.logout();
+  isUserMenuOpen.value = false;
+  isMobileMenuOpen.value = false;
+  router.push('/');
+}
 
 // Sync search query with URL changes
 watch(() => route.query.search, (newVal) => {
