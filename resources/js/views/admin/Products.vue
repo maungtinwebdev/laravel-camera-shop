@@ -466,7 +466,12 @@ async function saveProduct() {
     closeModal();
   } catch (error) {
     console.error('Save failed:', error);
-    toastStore.addToast('Failed to save product', 'error');
+    const message = error.response?.data?.message || 'Failed to save product';
+    const detail = error.response?.data?.errors 
+      ? Object.values(error.response.data.errors).flat().join(', ')
+      : error.response?.data?.error || '';
+    
+    toastStore.addToast(`${message}${detail ? ': ' + detail : ''}`, 'error');
   }
 }
 

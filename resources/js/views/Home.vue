@@ -377,11 +377,13 @@ function setupObserver() {
 }
 
 onMounted(async () => {
-  await fetchProducts();
-  fetchMostViewed();
-  if (authStore.token || authStore.user) {
-    wishlistStore.fetchWishlist();
-  }
+  // Fetch initial data in parallel
+  await Promise.all([
+    fetchProducts(1),
+    fetchMostViewed(),
+    (authStore.token || authStore.user) ? wishlistStore.fetchWishlist() : Promise.resolve()
+  ]);
+  
   nextTick(() => {
     setupObserver();
   });

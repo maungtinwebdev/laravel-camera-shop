@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Product;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
 {
@@ -42,26 +43,46 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
-            'brand_id' => 'required|exists:brands,id',
-            'price' => 'required|numeric',
-            'original_price' => 'nullable|numeric',
-            'sale_price' => 'nullable|numeric',
-            'cost_price' => 'nullable|numeric',
-            'description' => 'nullable|string',
-            'image' => 'nullable|string',
-            'gallery' => 'nullable|array',
-            'specifications' => 'nullable|array',
-            'stock' => 'required|integer|min:0',
-        ]);
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'category_id' => 'required|exists:categories,id',
+                'brand_id' => 'required|exists:brands,id',
+                'price' => 'required|numeric',
+                'original_price' => 'nullable|numeric',
+                'sale_price' => 'nullable|numeric',
+                'cost_price' => 'nullable|numeric',
+                'description' => 'nullable|string',
+                'image' => 'nullable|string',
+                'gallery' => 'nullable|array',
+                'specifications' => 'nullable|array',
+                'stock' => 'required|integer|min:0',
+            ]);
 
-        $validated['slug'] = Str::slug($validated['name']);
+            $validated['slug'] = Str::slug($validated['name']);
+            
+            // Handle image field specifically if it's sent as a base64 string or similar
+            // For now, ensure it's not too long for the column if provided
+            if (isset($validated['image']) && strlen($validated['image']) > 255) {
+                // This is a safety check; ideally, you'd handle file uploads
+                $validated['image'] = substr($validated['image'], 0, 255);
+            }
 
-        $product = Product::create($validated);
+            $product = Product::create($validated);
 
-        return response()->json($product, 201);
+            return response()->json($product, 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Product creation failed: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Product creation failed',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function show($id)
