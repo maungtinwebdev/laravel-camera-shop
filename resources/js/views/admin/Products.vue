@@ -403,13 +403,13 @@ async function fetchData(page = 1) {
     ]);
     
     const paginatedData = prodRes.data;
-    products.value = paginatedData.data;
+    products.value = paginatedData?.data || [];
     pagination.value = {
-      current_page: paginatedData.current_page,
-      last_page: paginatedData.last_page,
-      total: paginatedData.total,
-      from: paginatedData.from,
-      to: paginatedData.to
+      current_page: paginatedData?.current_page || 1,
+      last_page: paginatedData?.last_page || 1,
+      total: paginatedData?.total || 0,
+      from: paginatedData?.from || 0,
+      to: paginatedData?.to || 0
     };
 
     categories.value = catRes.data;

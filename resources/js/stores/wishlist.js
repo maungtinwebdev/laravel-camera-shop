@@ -15,7 +15,7 @@ export const useWishlistStore = defineStore('wishlist', () => {
         loading.value = true;
         try {
             const response = await axios.get('/api/wishlist');
-            items.value = response.data;
+            items.value = Array.isArray(response.data) ? response.data : [];
         } catch (error) {
             console.error('Failed to fetch wishlist', error);
         } finally {

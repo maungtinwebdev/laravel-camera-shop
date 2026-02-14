@@ -334,10 +334,12 @@ async function fetchProducts(page = 1, append = false) {
     ]);
 
     const paginatedData = prodRes.data;
+    const newData = paginatedData?.data || [];
+
     if (append) {
-      products.value = [...products.value, ...paginatedData.data];
+      products.value = [...(Array.isArray(products.value) ? products.value : []), ...newData];
     } else {
-      products.value = paginatedData.data;
+      products.value = newData;
     }
 
     currentPage.value = paginatedData.current_page;
@@ -395,8 +397,24 @@ watch(() => [route.query.search, route.query.category, route.query.brand], () =>
 });
 
 const filteredProducts = computed(() => {
-  // Since we now filter on backend, we just return products.value
-  return products.value;
+  const items = Array.isArray(products.value) ? products.value : [];
+  
+  const cats = Array.isArray(selectedCategories.value) ? selectedCategories.value : [];
+  const brs = Array.isArray(selectedBrands.value) ? selectedBrands.value : [];
+
+  if (cats.length === 0 && brs.length === 0) {
+    return items;
+  }
+
+  return items.filter(product => {
+    const categoryMatch = cats.length === 0 || 
+                         (product.category && cats.includes(product.category.slug));
+    
+    const brandMatch = brs.length === 0 || 
+                      (product.brand && brs.includes(product.brand.slug));
+    
+    return categoryMatch && brandMatch;
+  });
 });
 
 function addToCart(product) {
