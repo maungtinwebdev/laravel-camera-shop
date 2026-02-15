@@ -34,7 +34,7 @@
     </div>
 
     <!-- Most Viewed Products -->
-    <div v-if="mostViewedProducts.length > 0 && !loading" class="mb-16">
+    <div v-if="loadingMostViewed || mostViewedProducts.length > 0" class="mb-16">
       <div class="flex items-center justify-between mb-8">
         <div class="flex items-center gap-3">
           <div class="p-2 bg-orange-50 rounded-xl">
@@ -47,7 +47,7 @@
         </div>
         
         <!-- Navigation Buttons -->
-        <div class="hidden md:flex gap-2">
+        <div v-if="!loadingMostViewed" class="hidden md:flex gap-2">
           <button @click="scrollSlider('left')" class="p-2 rounded-full border border-gray-200 hover:bg-gray-50 transition shadow-sm">
             <ChevronLeftIcon class="w-5 h-5 text-gray-600" />
           </button>
@@ -58,6 +58,23 @@
       </div>
 
       <div 
+        v-if="loadingMostViewed"
+        class="flex gap-6 overflow-x-auto pb-6 scrollbar-hide"
+      >
+        <div v-for="i in 5" :key="i" class="flex-none w-44 bg-white rounded-xl border border-gray-100 overflow-hidden animate-pulse">
+          <div class="aspect-square bg-gray-200"></div>
+          <div class="p-2.5 space-y-2">
+            <div class="h-3 bg-gray-200 rounded w-3/4"></div>
+            <div class="flex justify-between items-center">
+              <div class="h-3 bg-gray-200 rounded w-1/4"></div>
+              <div class="h-6 w-6 bg-gray-200 rounded-lg"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div 
+        v-else
         ref="popularSlider"
         class="flex gap-6 overflow-x-auto pb-6 scrollbar-hide snap-x snap-mandatory scroll-smooth"
         style="-ms-overflow-style: none; scrollbar-width: none;"
@@ -271,6 +288,7 @@ const products = ref([]);
 const mostViewedProducts = ref([]);
 const categories = ref([]);
 const loading = ref(true);
+const loadingMostViewed = ref(true);
 const loadingMore = ref(false);
 const popularSlider = ref(null);
 const sentinel = ref(null);
@@ -320,11 +338,14 @@ watch(() => [selectedCategories.value, selectedBrands.value], () => {
 }, { deep: true });
 
 async function fetchMostViewed() {
+  loadingMostViewed.value = true;
   try {
     const response = await axios.get('/api/products/most-viewed');
     mostViewedProducts.value = response.data;
   } catch (error) {
     console.error('Failed to fetch most viewed products', error);
+  } finally {
+    loadingMostViewed.value = false;
   }
 }
 

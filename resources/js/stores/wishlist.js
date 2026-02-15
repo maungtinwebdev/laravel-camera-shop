@@ -25,24 +25,31 @@ export const useWishlistStore = defineStore('wishlist', () => {
 
     async function toggleWishlist(product) {
         if (!authStore.token) {
-            // Redirect to login or show message
             return false;
         }
 
         const index = items.value.findIndex(item => item.id === product.id);
+        const originalItems = [...items.value];
+        
+        // Optimistic Update
+        if (index > -1) {
+            items.value.splice(index, 1);
+        } else {
+            items.value.push(product);
+        }
         
         try {
             if (index > -1) {
-                // Remove
+                // Remove from backend
                 await axios.delete(`/api/wishlist/${product.id}`);
-                items.value.splice(index, 1);
             } else {
-                // Add
+                // Add to backend
                 await axios.post('/api/wishlist', { product_id: product.id });
-                items.value.push(product);
             }
             return true;
         } catch (error) {
+            // Revert on error
+            items.value = originalItems;
             console.error('Failed to toggle wishlist', error);
             return false;
         }
