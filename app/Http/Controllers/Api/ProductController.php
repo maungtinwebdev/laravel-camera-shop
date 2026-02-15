@@ -12,17 +12,28 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         $page = $request->get('page', 1);
+        
         $search = $request->get('search', '');
+        if (is_array($search)) {
+            $search = implode(' ', $search);
+        }
+
         $category = $request->get('category', '');
+        if (is_array($category)) {
+            $category = implode(',', $category);
+        }
+
         $brand = $request->get('brand', '');
+        if (is_array($brand)) {
+            $brand = implode(',', $brand);
+        }
         
         $cacheKey = "products_index_{$page}_{$search}_{$category}_{$brand}";
 
-        return Cache::remember($cacheKey, 600, function () use ($request) {
+        return Cache::remember($cacheKey, 600, function () use ($request, $search, $category, $brand) {
             $query = Product::with(['category', 'brand']);
 
-            if ($request->has('search')) {
-                $search = $request->search;
+            if (!empty($search)) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
                       ->orWhere('description', 'like', "%{$search}%")
@@ -35,15 +46,15 @@ class ProductController extends Controller
                 });
             }
 
-            if ($request->has('category')) {
-                $categories = explode(',', $request->category);
+            if (!empty($category)) {
+                $categories = explode(',', $category);
                 $query->whereHas('category', function ($q) use ($categories) {
                     $q->whereIn('slug', $categories);
                 });
             }
 
-            if ($request->has('brand')) {
-                $brands = explode(',', $request->brand);
+            if (!empty($brand)) {
+                $brands = explode(',', $brand);
                 $query->whereHas('brand', function ($q) use ($brands) {
                     $q->whereIn('slug', $brands);
                 });
