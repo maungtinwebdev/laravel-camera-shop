@@ -12,33 +12,68 @@ class SwitchEnvironment extends Command
      *
      * @var string
      */
-    protected $signature = 'env:switch {environment : The environment to switch to (local/live/supabase)}';
+    protected $signature = 'env:switch {mode : The environment mode (local_postgres, local_supabase, live_postgres, live_supabase)}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Switch the environment configuration (DB, APP_URL, Google OAuth) in .env file';
+    protected $description = 'Switch the environment configuration based on mode';
 
     /**
      * Execute the console command.
      */
     public function handle()
     {
-        $environment = $this->argument('environment');
+        $mode = $this->argument('mode');
+        
+        // Define configurations for each mode
+        $configs = [
+            'local_postgres' => [
+                'APP_ENV' => 'local',
+                'APP_DEBUG' => 'true',
+                'APP_URL' => 'http://localhost:8000',
+                'FRONTEND_URL' => 'http://localhost:8000',
+                'DB_CONNECTION' => 'pgsql',
+                'GOOGLE_REDIRECT_URI' => 'http://localhost:8000/api/auth/google/callback',
+            ],
+            'local_supabase' => [
+                'APP_ENV' => 'local',
+                'APP_DEBUG' => 'true',
+                'APP_URL' => 'http://localhost:8000',
+                'FRONTEND_URL' => 'http://localhost:8000',
+                'DB_CONNECTION' => 'supabase',
+                'GOOGLE_REDIRECT_URI' => 'http://localhost:8000/api/auth/google/callback',
+            ],
+            'live_postgres' => [
+                'APP_ENV' => 'production',
+                'APP_DEBUG' => 'false',
+                'APP_URL' => 'https://camera-shop.laravel.cloud',
+                'FRONTEND_URL' => 'https://camera-shop.laravel.cloud',
+                'DB_CONNECTION' => 'pgsql',
+                'GOOGLE_REDIRECT_URI' => 'https://camera-shop.laravel.cloud/api/auth/google/callback',
+            ],
+            'live_supabase' => [
+                'APP_ENV' => 'production',
+                'APP_DEBUG' => 'false',
+                'APP_URL' => 'https://camera-shop.laravel.cloud',
+                'FRONTEND_URL' => 'https://camera-shop.laravel.cloud',
+                'DB_CONNECTION' => 'supabase',
+                'GOOGLE_REDIRECT_URI' => 'https://camera-shop.laravel.cloud/api/auth/google/callback',
+            ],
+        ];
 
-        // Normalize input
-        $environment = strtolower($environment);
-        if ($environment === 'supabase' || $environment === 'production') {
-            $environment = 'live';
-        }
-
-        if (!in_array($environment, ['local', 'live'])) {
-            $this->error('Invalid environment. Use "local" or "live" (alias: supabase).');
+        if (!array_key_exists($mode, $configs)) {
+            $this->error("Invalid mode: {$mode}");
+            $this->info("Available modes:");
+            foreach (array_keys($configs) as $key) {
+                $this->line(" - {$key}");
+            }
             return 1;
         }
 
+        $settings = $configs[$mode];
         $envPath = base_path('.env');
 
         if (!File::exists($envPath)) {
@@ -48,29 +83,9 @@ class SwitchEnvironment extends Command
 
         $envContent = File::get($envPath);
         
-        // Define settings for each environment
-        $settings = [];
-        if ($environment === 'local') {
-            $settings = [
-                'DB_CONNECTION' => 'pgsql',
-                'APP_URL' => 'http://localhost:8000',
-                'FRONTEND_URL' => 'http://localhost:8000',
-                'GOOGLE_REDIRECT_URI' => 'http://localhost:8000/api/auth/google/callback',
-            ];
-        } else {
-            // Live / Supabase
-            $settings = [
-                'DB_CONNECTION' => 'supabase',
-                'APP_URL' => 'https://camera-shop.laravel.cloud',
-                'FRONTEND_URL' => 'https://camera-shop.laravel.cloud',
-                'GOOGLE_REDIRECT_URI' => 'https://camera-shop.laravel.cloud/api/auth/google/callback',
-            ];
-        }
-
-        // Apply updates
         foreach ($settings as $key => $value) {
-            if (preg_match("/^{$key}=(.*)$/m", $envContent)) {
-                $envContent = preg_replace("/^{$key}=(.*)$/m", "{$key}={$value}", $envContent);
+            if (preg_match("/^{$key}=/m", $envContent)) {
+                $envContent = preg_replace("/^{$key}=.*/m", "{$key}={$value}", $envContent);
             } else {
                 $envContent .= "\n{$key}={$value}";
             }
@@ -78,12 +93,11 @@ class SwitchEnvironment extends Command
 
         File::put($envPath, $envContent);
 
-        $this->info("Environment switched to: {$environment}");
+        $this->info("Environment switched to: {$mode}");
         foreach ($settings as $key => $value) {
             $this->line(" - {$key}: {$value}");
         }
         
-        // Clear config cache
         $this->call('config:clear');
 
         return 0;
