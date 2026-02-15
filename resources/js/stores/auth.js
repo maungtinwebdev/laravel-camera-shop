@@ -14,18 +14,20 @@ export const useAuthStore = defineStore('auth', () => {
     async function login(email, password) {
         try {
             const response = await axios.post('/api/login', { email, password });
-            token.value = response.data.token;
+            setToken(response.data.token);
             user.value = response.data.user;
-
-            localStorage.setItem('token', token.value);
             localStorage.setItem('user', JSON.stringify(user.value));
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token.value}`;
-            
             return true;
         } catch (error) {
             console.error('Login failed', error);
             throw error;
         }
+    }
+
+    function setToken(newToken) {
+        token.value = newToken;
+        localStorage.setItem('token', newToken);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
     }
 
     function clearAuth() {
@@ -63,5 +65,5 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
-    return { user, token, login, logout, fetchUser, clearAuth };
+    return { user, token, login, logout, fetchUser, clearAuth, setToken };
 });

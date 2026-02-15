@@ -23,8 +23,8 @@ onMounted(async () => {
   
   if (token) {
     try {
-      // Set the token in localStorage and update auth state
-      localStorage.setItem('token', token);
+      // Set the token and update axios headers
+      authStore.setToken(token);
       
       // Fetch user data using the token
       await authStore.fetchUser();
