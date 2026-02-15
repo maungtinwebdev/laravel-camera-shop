@@ -90,9 +90,9 @@
             <router-link :to="'/product/' + product.slug" class="font-bold text-xs text-gray-900 hover:text-blue-600 transition block mb-1 line-clamp-1">
               {{ product.name }}
             </router-link>
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between mt-1">
               <span class="font-black text-blue-600 text-xs">${{ parseFloat(product.sale_price || product.price).toLocaleString() }}</span>
-              <button @click="cartStore.addToCart(product)" class="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition">
+              <button @click="addToCart(product)" class="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all active:scale-90">
                 <ShoppingBagIcon class="w-3.5 h-3.5" />
               </button>
             </div>
@@ -198,7 +198,7 @@
               </router-link>
               <p class="text-gray-500 text-sm mb-4 line-clamp-2">{{ product.description }}</p>
               
-              <div class="mt-auto flex justify-between items-end pt-4 border-t border-gray-50">
+              <div class="mt-auto flex justify-between items-center pt-4 border-t border-gray-50">
                 <div class="flex flex-col">
                   <span v-if="product.original_price && product.sale_price && product.sale_price < product.original_price" class="text-xs text-gray-400 line-through mb-0.5">
                     ${{ parseFloat(product.original_price).toLocaleString() }}
@@ -207,7 +207,17 @@
                     ${{ parseFloat(product.sale_price || product.price).toLocaleString() }}
                   </span>
                 </div>
-                <span class="text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded-full mb-1">In Stock</span>
+                
+                <div class="flex flex-col items-end gap-2">
+                  <span class="text-[10px] text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded-full uppercase tracking-wider">In Stock</span>
+                  <button 
+                    @click="addToCart(product)" 
+                    class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-blue-700 transition-all shadow-md hover:shadow-blue-200 active:scale-95"
+                  >
+                    <ShoppingBagIcon class="w-4 h-4" />
+                    <span>Add</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
