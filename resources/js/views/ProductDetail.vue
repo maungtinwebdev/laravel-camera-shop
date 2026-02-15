@@ -283,7 +283,7 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import { useAuthStore } from '../stores/auth';
 import { useCartStore } from '../stores/cart';
@@ -318,6 +318,7 @@ const props = defineProps({
 });
 
 const route = useRoute();
+const router = useRouter();
 const product = ref(null);
 const authStore = useAuthStore();
 const cartStore = useCartStore();
@@ -393,6 +394,10 @@ watch(() => props.slug, (newSlug) => {
 });
 
 function addToCart() {
+  if (!authStore.user) {
+    router.push('/login');
+    return;
+  }
   if (product.value) {
     for(let i = 0; i < quantity.value; i++) {
       cartStore.addToCart(product.value);

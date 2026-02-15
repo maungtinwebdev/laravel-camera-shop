@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import axios from 'axios';
 import { useAuthStore } from './auth';
+import router from '../router';
 
 export const useWishlistStore = defineStore('wishlist', () => {
     const items = ref([]);
@@ -25,6 +26,7 @@ export const useWishlistStore = defineStore('wishlist', () => {
 
     async function toggleWishlist(product) {
         if (!authStore.token) {
+            router.push('/login');
             return false;
         }
 

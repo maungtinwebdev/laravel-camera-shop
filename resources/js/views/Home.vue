@@ -451,6 +451,10 @@ const filteredProducts = computed(() => {
 });
 
 function addToCart(product) {
+  if (!authStore.user) {
+    router.push('/login');
+    return;
+  }
   cartStore.addToCart(product);
   toastStore.addToast(`Added ${product.name} to cart`);
 }
