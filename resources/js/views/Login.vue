@@ -74,7 +74,7 @@ const authStore = useAuthStore();
 const router = useRouter();
 
 function loginWithGoogle() {
-  window.location.href = 'http://localhost:8000/api/auth/google';
+  window.location.href = '/api/auth/google';
 }
 
 async function handleLogin() {
