@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import axios from 'axios';
 import { useAuthStore } from './auth';
 import router from '../router';
@@ -60,6 +60,12 @@ export const useWishlistStore = defineStore('wishlist', () => {
     function isInWishlist(productId) {
         return items.value.some(item => item.id === productId);
     }
+
+    watch(() => authStore.token, (newToken) => {
+        if (!newToken) {
+            items.value = [];
+        }
+    });
 
     return { items, loading, itemCount, fetchWishlist, toggleWishlist, isInWishlist };
 });

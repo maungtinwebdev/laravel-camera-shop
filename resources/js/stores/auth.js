@@ -38,15 +38,18 @@ export const useAuthStore = defineStore('auth', () => {
         delete axios.defaults.headers.common['Authorization'];
     }
 
-    async function logout() {
-        try {
-            await axios.post('/api/logout');
-        } catch (e) {
-            // Ignore error
-        } finally {
-            clearAuth();
-            router.push('/login');
+    function logout() {
+        const tokenValue = token.value;
+        clearAuth();
+        
+        // Use a detached request to avoid waiting
+        if (tokenValue) {
+            axios.post('/api/logout', {}, {
+                headers: { Authorization: `Bearer ${tokenValue}` }
+            }).catch(() => {});
         }
+        
+        router.push('/login');
     }
 
     async function fetchUser() {
