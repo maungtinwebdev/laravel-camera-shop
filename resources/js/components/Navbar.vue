@@ -255,7 +255,6 @@ function handleLogout() {
   authStore.logout();
   isUserMenuOpen.value = false;
   isMobileMenuOpen.value = false;
-  router.push('/');
 }
 
 // Sync search query with URL changes

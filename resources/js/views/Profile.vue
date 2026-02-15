@@ -201,7 +201,6 @@ async function fetchOrders() {
 
 function handleLogout() {
   authStore.logout();
-  router.push('/');
 }
 
 function formatDate(dateString) {
