@@ -17,16 +17,19 @@ class ProductController extends Controller
         if (is_array($search)) {
             $search = implode(' ', $search);
         }
+        $search = (string) $search;
 
         $category = $request->get('category', '');
         if (is_array($category)) {
             $category = implode(',', $category);
         }
+        $category = (string) $category;
 
         $brand = $request->get('brand', '');
         if (is_array($brand)) {
             $brand = implode(',', $brand);
         }
+        $brand = (string) $brand;
         
         $cacheKey = "products_index_{$page}_{$search}_{$category}_{$brand}";
 
