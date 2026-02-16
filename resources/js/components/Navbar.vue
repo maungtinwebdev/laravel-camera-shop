@@ -278,7 +278,8 @@ async function onSearchInput() {
         params: { search: searchQuery.value }
       });
       // Limit to top 5 results for the dropdown
-      searchResults.value = response.data.slice(0, 5);
+      const products = response.data.data || [];
+      searchResults.value = products.slice(0, 5);
     } catch (error) {
       console.error('Live search error:', error);
     } finally {
@@ -288,12 +289,16 @@ async function onSearchInput() {
 }
 
 function handleSearch() {
+  const query = {};
   if (searchQuery.value.trim()) {
-    router.push({
-      path: '/',
-      query: { ...route.query, search: searchQuery.value }
-    });
+    query.search = searchQuery.value;
   }
+  
+  router.push({
+    path: '/',
+    query
+  });
+
   isSearchFocused.value = false;
   isMobileMenuOpen.value = false;
 }

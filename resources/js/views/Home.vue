@@ -204,8 +204,6 @@ function addToCart(product) {
 }
 
 function clearFilters() {
-  categoryFilterStore.clear();
-  brandFilterStore.clear();
-  router.push({ path: '/', query: {} });
+  router.push({ query: {} });
 }
 </script>
