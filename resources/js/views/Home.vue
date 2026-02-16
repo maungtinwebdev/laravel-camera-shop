@@ -125,6 +125,7 @@ function getProductFilters() {
 }
 
 async function fetchProducts(page = 1) {
+  let fetchCount = 0;
   try {
     await productsStore.fetchProducts({
       page,
@@ -132,25 +133,42 @@ async function fetchProducts(page = 1) {
     });
   } catch (error) {
     console.error('Error fetching data:', error);
-    toastStore.addToast('Failed to load products', 'error');
+    fetchCount++;
+    if (fetchCount <= 2) {
+      fetchProducts(page);
+    } else {
+      toastStore.addToast('Failed to load products', 'error');
+    }
   }
 }
 
 async function fetchMostViewed() {
+  let fetchCount = 0;
   try {
     await mostViewedStore.fetchMostViewed();
   } catch (error) {
     console.error('Failed to fetch most viewed products', error);
+    fetchCount++;
+    if (fetchCount <= 2) {
+      fetchMostViewed();
+    } else {
+      toastStore.addToast('Failed to load most viewed products', 'error');
+    }
   }
 }
 
 async function fetchCategories() {
+  let fetchCount = 0;
   try {
     await categoryFilterStore.fetchCategories();
   } catch (error) {
     console.error('Failed to load categories', error);
-    fetchCategories();
-    // toastStore.addToast('Failed to load categories', 'error');
+    fetchCount++;
+    if (fetchCount <= 2) {
+      fetchCategories();
+    } else {
+      toastStore.addToast('Failed to load categories', 'error');
+    }
   }
 }
 
