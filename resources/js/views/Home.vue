@@ -285,13 +285,14 @@
 import { ref, onMounted, computed, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useRoute, useRouter } from 'vue-router';
-import axios from 'axios';
 import { useAuthStore } from '../stores/auth';
 import { useCartStore } from '../stores/cart';
 import { useToastStore } from '../stores/toast';
 import { useWishlistStore } from '../stores/wishlist';
 import { useProductsStore } from '../stores/products';
 import { useMostViewedStore } from '../stores/mostViewed';
+import { useCategoryFilterStore } from '../stores/categoryFilter';
+import { useBrandFilterStore } from '../stores/brandFilter';
 import { 
   FunnelIcon, 
   HeartIcon, 
@@ -310,6 +311,8 @@ const toastStore = useToastStore();
 const wishlistStore = useWishlistStore();
 const productsStore = useProductsStore();
 const mostViewedStore = useMostViewedStore();
+const categoryFilterStore = useCategoryFilterStore();
+const brandFilterStore = useBrandFilterStore();
 const {
   products,
   loading,
@@ -322,7 +325,16 @@ const {
   loading: loadingMostViewed
 } = storeToRefs(mostViewedStore);
 
-const categories = ref([]);
+const {
+  categories,
+  selectedCategories
+} = storeToRefs(categoryFilterStore);
+
+const {
+  brands,
+  selectedBrands
+} = storeToRefs(brandFilterStore);
+
 const popularSlider = ref(null);
 
 function scrollSlider(direction) {
@@ -334,9 +346,8 @@ function scrollSlider(direction) {
   });
 }
 
-const selectedCategories = ref(route.query.category ? route.query.category.split(',') : []);
-const selectedBrands = ref(route.query.brand ? route.query.brand.split(',') : []);
-const brands = ['Canon', 'Nikon', 'Sony', 'Fujifilm', 'Panasonic']; // Mock brands for filter
+categoryFilterStore.setFromQuery(route.query.category);
+brandFilterStore.setFromQuery(route.query.brand);
 
 function scrollToProducts() {
   const el = document.getElementById('products-grid');
@@ -393,8 +404,7 @@ async function fetchMostViewed() {
 
 async function fetchCategories() {
   try {
-    const response = await axios.get('/api/categories');
-    categories.value = Array.isArray(response.data) ? response.data : [];
+    await categoryFilterStore.fetchCategories();
   } catch (error) {
     console.error('Failed to load categories', error);
     toastStore.addToast('Failed to load categories', 'error');
@@ -436,6 +446,8 @@ onMounted(async () => {
 
 // Re-fetch products when search or filters change in URL
 watch(() => [route.query.search, route.query.category, route.query.brand], () => {
+  categoryFilterStore.setFromQuery(route.query.category);
+  brandFilterStore.setFromQuery(route.query.brand);
   fetchProducts(1);
 });
 
@@ -470,8 +482,8 @@ function addToCart(product) {
 }
 
 function clearFilters() {
-  selectedCategories.value = [];
-  selectedBrands.value = [];
+  categoryFilterStore.clear();
+  brandFilterStore.clear();
   router.push({ path: '/', query: {} });
 }
 </script>
