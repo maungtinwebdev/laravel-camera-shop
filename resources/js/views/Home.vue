@@ -283,12 +283,15 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
+import { storeToRefs } from 'pinia';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import { useAuthStore } from '../stores/auth';
 import { useCartStore } from '../stores/cart';
 import { useToastStore } from '../stores/toast';
 import { useWishlistStore } from '../stores/wishlist';
+import { useProductsStore } from '../stores/products';
+import { useMostViewedStore } from '../stores/mostViewed';
 import { 
   FunnelIcon, 
   HeartIcon, 
@@ -305,17 +308,22 @@ const authStore = useAuthStore();
 const cartStore = useCartStore();
 const toastStore = useToastStore();
 const wishlistStore = useWishlistStore();
+const productsStore = useProductsStore();
+const mostViewedStore = useMostViewedStore();
+const {
+  products,
+  loading,
+  currentPage,
+  lastPage,
+  totalProducts
+} = storeToRefs(productsStore);
+const {
+  mostViewedProducts,
+  loading: loadingMostViewed
+} = storeToRefs(mostViewedStore);
 
-const products = ref([]);
-const mostViewedProducts = ref([]);
 const categories = ref([]);
-const loading = ref(true);
-const loadingMostViewed = ref(true);
 const popularSlider = ref(null);
-
-const currentPage = ref(1);
-const lastPage = ref(1);
-const totalProducts = ref(0);
 
 function scrollSlider(direction) {
   if (!popularSlider.value) return;
@@ -355,47 +363,41 @@ watch(() => [selectedCategories.value, selectedBrands.value], () => {
   router.replace({ query });
 }, { deep: true });
 
-async function fetchMostViewed() {
-  loadingMostViewed.value = true;
-  try {
-    const response = await axios.get('/api/products/most-viewed');
-    mostViewedProducts.value = response.data;
-  } catch (error) {
-    console.error('Failed to fetch most viewed products', error);
-  } finally {
-    loadingMostViewed.value = false;
-  }
+function getProductFilters() {
+  return {
+    search: route.query.search || '',
+    category: route.query.category || '',
+    brand: route.query.brand || '',
+  };
 }
 
 async function fetchProducts(page = 1) {
-  loading.value = true;
-
   try {
-    const params = { page };
-    if (route.query.search) params.search = route.query.search;
-    if (route.query.category) params.category = route.query.category;
-    if (route.query.brand) params.brand = route.query.brand;
-    
-    const [prodRes, catRes] = await Promise.all([
-      axios.get('/api/products', { params }),
-      page === 1 ? axios.get('/api/categories') : Promise.resolve({ data: categories.value })
-    ]);
-
-    const paginatedData = prodRes.data;
-    const newData = paginatedData?.data || [];
-
-    products.value = newData;
-
-    currentPage.value = paginatedData.current_page;
-    lastPage.value = paginatedData.last_page;
-    totalProducts.value = paginatedData.total;
-    
-    if (page === 1) categories.value = catRes.data;
+    await productsStore.fetchProducts({
+      page,
+      ...getProductFilters()
+    });
   } catch (error) {
     console.error('Error fetching data:', error);
     toastStore.addToast('Failed to load products', 'error');
-  } finally {
-    loading.value = false;
+  }
+}
+
+async function fetchMostViewed() {
+  try {
+    await mostViewedStore.fetchMostViewed();
+  } catch (error) {
+    console.error('Failed to fetch most viewed products', error);
+  }
+}
+
+async function fetchCategories() {
+  try {
+    const response = await axios.get('/api/categories');
+    categories.value = Array.isArray(response.data) ? response.data : [];
+  } catch (error) {
+    console.error('Failed to load categories', error);
+    toastStore.addToast('Failed to load categories', 'error');
   }
 }
 
@@ -422,7 +424,8 @@ onMounted(async () => {
   // Always fetch latest arrivals and popular products for both auth and guest users.
   await Promise.allSettled([
     fetchProducts(1),
-    fetchMostViewed()
+    fetchMostViewed(),
+    fetchCategories()
   ]);
 
   // Keep auth-specific data isolated so it never blocks shop page product data.
