@@ -6,34 +6,44 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $page = $request->get('page', 1);
-        
+        $page = $request->integer('page', 1);
+        if ($page < 1) {
+            $page = 1;
+        }
+
         $search = $request->get('search', '');
         if (is_array($search)) {
             $search = implode(' ', $search);
         }
-        $search = (string) $search;
+        $search = trim((string) $search);
 
         $category = $request->get('category', '');
         if (is_array($category)) {
             $category = implode(',', $category);
         }
-        $category = (string) $category;
+        $category = trim((string) $category);
 
         $brand = $request->get('brand', '');
         if (is_array($brand)) {
             $brand = implode(',', $brand);
         }
-        $brand = (string) $brand;
-        
-        $cacheKey = "products_index_{$page}_{$search}_{$category}_{$brand}";
+        $brand = trim((string) $brand);
 
-        return Cache::remember($cacheKey, 600, function () use ($request, $search, $category, $brand) {
+        $cacheSignature = md5(json_encode([
+            'page' => $page,
+            'search' => $search,
+            'category' => $category,
+            'brand' => $brand,
+        ]));
+        $cacheKey = "products_index_{$cacheSignature}";
+
+        $buildQuery = function () use ($search, $category, $brand) {
             $query = Product::with(['category', 'brand'])->latest();
 
             if (!empty($search)) {
@@ -50,21 +60,37 @@ class ProductController extends Controller
             }
 
             if (!empty($category)) {
-                $categories = explode(',', $category);
+                $categories = array_values(array_filter(array_map('trim', explode(',', $category))));
                 $query->whereHas('category', function ($q) use ($categories) {
                     $q->whereIn('slug', $categories);
                 });
             }
 
             if (!empty($brand)) {
-                $brands = explode(',', $brand);
+                $brands = array_values(array_filter(array_map('trim', explode(',', $brand))));
                 $query->whereHas('brand', function ($q) use ($brands) {
                     $q->whereIn('slug', $brands);
                 });
             }
 
-            return $query->paginate(15);
-        });
+            return $query;
+        };
+
+        try {
+            return Cache::remember($cacheKey, 600, function () use ($buildQuery) {
+                return $buildQuery()->paginate(15);
+            });
+        } catch (\Throwable $e) {
+            Log::warning('Products index cache failed, falling back to direct query.', [
+                'message' => $e->getMessage(),
+                'page' => $page,
+                'search' => $search,
+                'category' => $category,
+                'brand' => $brand,
+            ]);
+
+            return $buildQuery()->paginate(15);
+        }
     }
 
     public function show($slug)
