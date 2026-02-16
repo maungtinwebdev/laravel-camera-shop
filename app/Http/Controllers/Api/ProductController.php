@@ -34,7 +34,7 @@ class ProductController extends Controller
         $cacheKey = "products_index_{$page}_{$search}_{$category}_{$brand}";
 
         return Cache::remember($cacheKey, 600, function () use ($request, $search, $category, $brand) {
-            $query = Product::with(['category', 'brand']);
+            $query = Product::with(['category', 'brand'])->latest();
 
             if (!empty($search)) {
                 $query->where(function ($q) use ($search) {

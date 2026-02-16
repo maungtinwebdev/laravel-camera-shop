@@ -240,17 +240,40 @@
           </div>
         </div>
 
-        <!-- Infinite Scroll Sentinel & Loading State -->
-        <div ref="sentinel" class="py-12 flex flex-col items-center justify-center">
-          <div v-if="loadingMore" class="flex flex-col items-center gap-3">
-            <div class="w-10 h-10 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
-            <p class="text-sm font-bold text-gray-400 uppercase tracking-widest">Loading more cameras...</p>
-          </div>
-          
-          <div v-else-if="currentPage >= lastPage && filteredProducts.length > 0" class="flex flex-col items-center gap-4 text-gray-400">
-            <div class="h-px w-24 bg-gray-100"></div>
-            <p class="text-sm font-black uppercase tracking-[0.2em]">You've reached the end</p>
-            <div class="h-px w-24 bg-gray-100"></div>
+        <!-- Pagination -->
+        <div v-if="!loading && filteredProducts.length > 0" class="py-10 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p class="text-sm text-gray-500">
+            Page {{ currentPage }} of {{ lastPage }}
+          </p>
+
+          <div class="flex items-center gap-2 flex-wrap justify-center">
+            <button
+              @click="goToPage(currentPage - 1)"
+              :disabled="currentPage === 1"
+              class="px-3 py-2 rounded-lg border text-sm font-bold transition"
+              :class="currentPage === 1 ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
+            >
+              Prev
+            </button>
+
+            <button
+              v-for="page in visiblePages"
+              :key="page"
+              @click="goToPage(page)"
+              class="w-9 px-3 py-2 rounded-lg border text-sm font-bold transition"
+              :class="page === currentPage ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
+            >
+              {{ page }}
+            </button>
+
+            <button
+              @click="goToPage(currentPage + 1)"
+              :disabled="currentPage === lastPage"
+              class="px-3 py-2 rounded-lg border text-sm font-bold transition"
+              :class="currentPage === lastPage ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
+            >
+              Next
+            </button>
           </div>
         </div>
       </div>
@@ -259,7 +282,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import { useAuthStore } from '../stores/auth';
@@ -268,7 +291,6 @@ import { useToastStore } from '../stores/toast';
 import { useWishlistStore } from '../stores/wishlist';
 import { 
   FunnelIcon, 
-  PlusIcon, 
   HeartIcon, 
   FireIcon, 
   EyeIcon, 
@@ -289,15 +311,11 @@ const mostViewedProducts = ref([]);
 const categories = ref([]);
 const loading = ref(true);
 const loadingMostViewed = ref(true);
-const loadingMore = ref(false);
 const popularSlider = ref(null);
-const sentinel = ref(null);
 
 const currentPage = ref(1);
 const lastPage = ref(1);
 const totalProducts = ref(0);
-
-let observer = null;
 
 function scrollSlider(direction) {
   if (!popularSlider.value) return;
@@ -349,9 +367,8 @@ async function fetchMostViewed() {
   }
 }
 
-async function fetchProducts(page = 1, append = false) {
-  if (page === 1) loading.value = true;
-  else loadingMore.value = true;
+async function fetchProducts(page = 1) {
+  loading.value = true;
 
   try {
     const params = { page };
@@ -367,11 +384,7 @@ async function fetchProducts(page = 1, append = false) {
     const paginatedData = prodRes.data;
     const newData = paginatedData?.data || [];
 
-    if (append) {
-      products.value = [...(Array.isArray(products.value) ? products.value : []), ...newData];
-    } else {
-      products.value = newData;
-    }
+    products.value = newData;
 
     currentPage.value = paginatedData.current_page;
     lastPage.value = paginatedData.last_page;
@@ -383,50 +396,44 @@ async function fetchProducts(page = 1, append = false) {
     toastStore.addToast('Failed to load products', 'error');
   } finally {
     loading.value = false;
-    loadingMore.value = false;
   }
 }
 
-async function loadMore() {
-  if (currentPage.value < lastPage.value && !loadingMore.value) {
-    await fetchProducts(currentPage.value + 1, true);
-  }
+async function goToPage(page) {
+  if (loading.value) return;
+  if (page < 1 || page > lastPage.value || page === currentPage.value) return;
+  await fetchProducts(page);
+  scrollToProducts();
 }
 
-function setupObserver() {
-  if (observer) observer.disconnect();
+const visiblePages = computed(() => {
+  const total = lastPage.value;
+  const current = currentPage.value;
+  if (total <= 1) return [1];
 
-  observer = new IntersectionObserver((entries) => {
-    if (entries[0].isIntersecting && !loading.value && !loadingMore.value) {
-      loadMore();
-    }
-  }, { threshold: 0.1 });
+  const start = Math.max(1, current - 2);
+  const end = Math.min(total, start + 4);
+  const normalizedStart = Math.max(1, end - 4);
 
-  if (sentinel.value) {
-    observer.observe(sentinel.value);
-  }
-}
-
-onMounted(async () => {
-  // Fetch initial data in parallel
-  await Promise.all([
-    fetchProducts(1),
-    fetchMostViewed(),
-    (authStore.token || authStore.user) ? wishlistStore.fetchWishlist() : Promise.resolve()
-  ]);
-  
-  nextTick(() => {
-    setupObserver();
-  });
+  return Array.from({ length: end - normalizedStart + 1 }, (_, i) => normalizedStart + i);
 });
 
-onUnmounted(() => {
-  if (observer) observer.disconnect();
+onMounted(async () => {
+  // Always fetch latest arrivals and popular products for both auth and guest users.
+  await Promise.allSettled([
+    fetchProducts(1),
+    fetchMostViewed()
+  ]);
+
+  // Keep auth-specific data isolated so it never blocks shop page product data.
+  if (authStore.token || authStore.user) {
+    wishlistStore.fetchWishlist();
+  }
 });
 
 // Re-fetch products when search or filters change in URL
 watch(() => [route.query.search, route.query.category, route.query.brand], () => {
-  fetchProducts(1, false);
+  fetchProducts(1);
 });
 
 const filteredProducts = computed(() => {
